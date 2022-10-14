@@ -130,7 +130,10 @@ void play_game(void) {
 			// YOU WILL NEED TO IMPLEMENT THIS FUNCTION
 			move_player_n(1);
 		}
-		
+
+		if (btn == BUTTON1_PUSHED) {
+			move_player_n(2);
+		}
 		current_time = get_current_time();
 		if (current_time >= last_flash_time + 500) {
 			// 500ms (0.5 second) has passed since the last time we

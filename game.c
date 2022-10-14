@@ -49,6 +49,10 @@ int8_t player_1_y;
 // For flashing the player icon
 uint8_t player_visible;
 
+// Added by student (Arjun Srikanth)
+// 1 if player moved up a row, 0 if not
+int8_t moved_up = 0;
+
 void initialise_game(void) {
 	
 	// initialise the display we are using.
@@ -119,7 +123,28 @@ void move_player_n(uint8_t num_spaces) {
 	 *		cursor is flashed.
 	 */
 	// YOUR CODE HERE
-
+	int8_t prev_player_x = player_1_x;
+	int8_t prev_player_y = player_1_y;
+	if(((player_1_x == 7) | ((player_1_x==0) & (player_1_y%2))) & (moved_up == 0)) {
+		moved_up = 1;
+		player_1_y += 1;
+	}else if(player_1_y%2) {
+		moved_up = 0;
+		if (player_1_x - num_spaces < 0) {
+			player_1_x -=1;
+		}else {
+			player_1_x -= num_spaces;
+		}
+	}else{
+		moved_up = 0;
+		if(player_1_x + num_spaces > 7) {
+			player_1_x += 1;
+		}else {
+			player_1_x += num_spaces;
+		}
+	}
+	update_square_colour(prev_player_x, prev_player_y, get_object_at(prev_player_x, prev_player_y));
+	update_square_colour(player_1_x, player_1_y, PLAYER_1);
 }
 
 // Move the player one space in the direction (dx, dy). The player should wrap
