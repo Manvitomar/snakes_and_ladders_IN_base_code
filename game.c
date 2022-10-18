@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "display.h"
 #include "terminalio.h"
 
@@ -51,7 +52,7 @@ uint8_t player_visible;
 
 // Added by student (Arjun Srikanth)
 // 1 if player moved up a row, 0 if not
-int8_t moved_up = 0;
+bool moved_up = false;
 
 void initialise_game(void) {
 	
@@ -125,23 +126,64 @@ void move_player_n(uint8_t num_spaces) {
 	// YOUR CODE HERE
 	int8_t prev_player_x = player_1_x;
 	int8_t prev_player_y = player_1_y;
-	if(((player_1_x == 7) | ((player_1_x==0) & (player_1_y%2))) & (moved_up == 0)) {
-		moved_up = 1;
+
+	int8_t diff = player_1_x - num_spaces;
+	// Boolean values to check player's position
+	
+	//	Player is at the end of the row (right side)
+	bool player_end_right = (player_1_x == WIDTH-1);
+	
+	//	Player is at the end of the row (left side)
+	bool player_end_left = ((player_1_x==0) & (player_1_y%2));
+
+	if(( player_end_right | player_end_left) & (!moved_up)) {
+		moved_up = true;
 		player_1_y += 1;
+
+		if (player_end_left) {
+			player_1_x += num_spaces-1;
+		} else {
+			player_1_x -= num_spaces-1;
+		}
 	}else if(player_1_y%2) {
-		moved_up = 0;
-		if (player_1_x - num_spaces < 0) {
-			player_1_x -=1;
-		}else {
+		moved_up = false;
+
+		// Make sure the player doesn't go past the end point
+		if ((diff < 0) & (player_1_y == HEIGHT-1)) {
+			player_1_x = 0;
+		} else if (diff < 0) {
+			int8_t remaining_steps = num_spaces - (player_1_x+1);
+			int8_t dx = player_1_x - remaining_steps;
+			player_1_x -= dx;
+			player_1_y += 1;
+			moved_up = true;
+		} else {
 			player_1_x -= num_spaces;
 		}
 	}else{
-		moved_up = 0;
-		if(player_1_x + num_spaces > 7) {
-			player_1_x += 1;
+		moved_up = false;
+		if(player_1_x + num_spaces > WIDTH-1) {
+			// Steps to end of row
+			int8_t x_steps = WIDTH - player_1_x;
+
+			// remaining steps from x += x_steps, y += 1
+			int8_t remaining_steps = num_spaces - (x_steps - 1);
+			
+			// number of x_steps player needs to take to reach new point
+			int8_t dx = x_steps - remaining_steps;
+
+			player_1_x += dx;
+			player_1_y += 1;
+			moved_up = true;
 		}else {
 			player_1_x += num_spaces;
 		}
+	}
+
+	// Check if player is at end tile
+	if((prev_player_x == 0) & (prev_player_y == HEIGHT-1)) {
+		player_1_x = prev_player_x;
+		player_1_y = prev_player_y;
 	}
 	update_square_colour(prev_player_x, prev_player_y, get_object_at(prev_player_x, prev_player_y));
 	update_square_colour(player_1_x, player_1_y, PLAYER_1);
@@ -164,7 +206,24 @@ void move_player(int8_t dx, int8_t dy) {
 	 *		cursor is flashed.
 	 */	
 	// YOUR CODE HERE
+	int8_t prev_player_x = player_1_x;
+	int8_t prev_player_y = player_1_y;
 
+	if (player_1_x + dx >= WIDTH) {
+		player_1_x = 0;
+	} else if (player_1_y + dy >= HEIGHT) {
+		player_1_y = 0;
+	} else if (player_1_x + dx < 0) {
+		player_1_x = WIDTH - 1;
+	} else if (player_1_y + dy < 0) {
+		player_1_y = HEIGHT - 1;
+	} else {
+		player_1_x += dx;
+		player_1_y += dy;
+	}
+
+	update_square_colour(prev_player_x, prev_player_y, get_object_at(prev_player_x, prev_player_y));
+	update_square_colour(player_1_x, player_1_y, PLAYER_1);
 }
 
 // Flash the player icon on and off. This should be called at a regular

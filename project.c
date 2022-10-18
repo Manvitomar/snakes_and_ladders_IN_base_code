@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
@@ -32,6 +33,9 @@ void start_screen(void);
 void new_game(void);
 void play_game(void);
 void handle_game_over(void);
+
+// Check if player has moved
+bool player_moved = false;
 
 /////////////////////////////// main //////////////////////////////////
 int main(void) {
@@ -134,7 +138,38 @@ void play_game(void) {
 		if (btn == BUTTON1_PUSHED) {
 			move_player_n(2);
 		}
+
+		char serial_input = -1;
+		if (serial_input_available()) {
+			serial_input = fgetc(stdin);
+		}
+
+		if (serial_input == 's' || serial_input == 'S') {
+			move_player(0, -1);
+			player_moved = true;
+		}
+
+		if (serial_input == 'w' || serial_input == 'W') {
+			move_player(0, 1);
+			player_moved = true;
+		}
+
+		if (serial_input == 'd' || serial_input == 'D') {
+			move_player(1, 0);
+			player_moved = true;
+		}
+
+		if (serial_input == 'a' || serial_input == 'A') {
+			move_player(-1, 0);
+			player_moved = true;
+		}
+
 		current_time = get_current_time();
+
+		// Hold player flash for 500ms after movement
+		if (player_moved) {
+			current_time = 0;
+		}
 		if (current_time >= last_flash_time + 500) {
 			// 500ms (0.5 second) has passed since the last time we
 			// flashed the cursor, so flash the cursor
@@ -143,6 +178,8 @@ void play_game(void) {
 			// Update the most recent time the cursor was flashed
 			last_flash_time = current_time;
 		}
+
+		player_moved = false;
 	}
 	// We get here if the game is over.
 }
