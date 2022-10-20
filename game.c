@@ -250,3 +250,8 @@ uint8_t is_game_over(void) {
 	// Detect if the game is over i.e. if a player has won.
 	return 0;
 }
+
+uint8_t roll_dice(void) {
+	uint8_t dice_value = rand() % 6; // 0 to 5
+	return dice_value + 1; // 1 to 6 (inclusive)
+}

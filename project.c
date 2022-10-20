@@ -37,6 +37,10 @@ void handle_game_over(void);
 // Check if player has moved
 bool player_moved = false;
 
+// Dice value and start roll
+uint8_t dice_value = 0;
+bool start_roll = false;
+
 /////////////////////////////// main //////////////////////////////////
 int main(void) {
 	// Setup hardware and call backs. This will turn on 
@@ -165,6 +169,21 @@ void play_game(void) {
 		}
 
 		current_time = get_current_time();
+
+		if ((btn == BUTTON2_PUSHED) & !start_roll) {
+			start_roll = true;
+			printf_P(PSTR("Dice Rolling..."));
+		}else if ((btn == BUTTON2_PUSHED) & start_roll) {
+			start_roll = false;
+			printf_P(PSTR("Dice Stoppped"));
+			move_player_n(dice_value);
+		}
+
+		if (start_roll) {
+			if (current_time >= last_flash_time + 100) {
+				dice_value = roll_dice();
+			}
+		}
 
 		// Hold player flash for 500ms after movement
 		if (player_moved) {
