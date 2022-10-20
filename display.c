@@ -15,6 +15,13 @@
 static const uint8_t snkld_display[MATRIX_NUM_COLUMNS] = 
 		{117, 85, 93, 124, 64, 124, 125, 17, 109, 0, 124, 4, 4, 125, 69, 57};
 
+
+// Seven segment display values
+uint8_t seven_seg[10] = {63, 6, 91, 79, 102, 109, 125, 7, 127, 111};
+
+uint8_t digit = 0; // 0 = right display, 1 = left display
+uint8_t value; // Value to be displayed
+
 void initialise_display(void) {
 	// start by clearing the LED matrix
 	ledmatrix_clear();
@@ -124,4 +131,39 @@ void update_square_colour(uint8_t x, uint8_t y, uint8_t object) {
 
 	// Update the pixel at the given location with this colour
 	ledmatrix_update_pixel(y, WIDTH - 1 - x, colour);
+}
+
+void display_digit(uint8_t number, uint8_t digit) {
+	PORTA = digit;
+	PORTC = seven_seg[number];
+}
+
+void seven_seg_display(uint8_t moves, uint8_t dice_value) {
+	// Set Port C (all pins) to be outputs
+	DDRC = 0xff;
+
+	// Set Port A, pin 0 to be an output
+	DDRA = (1<<0);
+
+	// Setup timer/counter 1 so that it reaches an output compare
+	// match every 1 millisecond (1000 times per second) and then
+	// resets to 0
+	OCR1A = 500;
+	TCCR1A = (0<<COM1A1) | (1<<COM1A0);
+	TCCR1B = (1<<WGM12) | (1<<CS11);
+
+	if (digit == 0)
+	{
+		value = dice_value;
+	}else {
+		value = moves%10;
+	}
+	display_digit(value, digit);
+	digit = ~(digit);
+
+	while ((TIFR1 & (1<<OCF1A)) == 0) {
+		;
+	}
+
+	TIFR1 &= (1<<OCF1A);
 }

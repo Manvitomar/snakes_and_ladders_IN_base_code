@@ -34,4 +34,8 @@ void start_display(void);
 void update_square_colour(uint8_t x, uint8_t y, uint8_t object);
 
 
+void display_digit(uint8_t number, uint8_t digit);
+void seven_seg_display(uint8_t moves, uint8_t dice_value);
+
+
 #endif /* DISPLAY_H_ */

@@ -63,5 +63,8 @@ void flash_player_cursor(void);
 // Returns 1 if the game is over, 0 otherwise.
 uint8_t is_game_over(void);
 
+// Simulates dice roll by generating random value from 1-6 (inclusive)
+uint8_t roll_dice(void);
+
 #endif
 

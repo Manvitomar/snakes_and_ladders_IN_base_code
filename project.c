@@ -36,6 +36,7 @@ void handle_game_over(void);
 
 // Check if player has moved
 bool player_moved = false;
+uint8_t moves = 0;
 
 // Dice value and start roll
 uint8_t dice_value = 0;
@@ -90,6 +91,8 @@ void start_screen(void) {
 		// There are two steps to this
 		// 1) collect any serial input (if available)
 		// 2) check if the input is equal to the character 's'
+		seven_seg_display(moves, dice_value); // Display 00 during start_screen
+
 		char serial_input = -1;
 		if (serial_input_available()) {
 			serial_input = fgetc(stdin);
@@ -122,9 +125,11 @@ void new_game(void) {
 void play_game(void) {
 	
 	uint32_t last_flash_time, current_time;
+	uint32_t last_roll_time; // Last time roll_dice() was called
 	uint8_t btn; // The button pushed
 	
 	last_flash_time = get_current_time();
+	last_roll_time = get_current_time();
 	
 	// We play the game until it's over
 	while(!is_game_over()) {
@@ -133,13 +138,13 @@ void play_game(void) {
 		// NO_BUTTON_PUSHED if no button has been pushed
 		btn = button_pushed();
 		
-		if (btn == BUTTON0_PUSHED) {
+		if ((btn == BUTTON0_PUSHED) & !start_roll) {
 			// If button 0 is pushed, move the player 1 space forward
 			// YOU WILL NEED TO IMPLEMENT THIS FUNCTION
 			move_player_n(1);
 		}
 
-		if (btn == BUTTON1_PUSHED) {
+		if ((btn == BUTTON1_PUSHED) & !start_roll) {
 			move_player_n(2);
 		}
 
@@ -148,40 +153,41 @@ void play_game(void) {
 			serial_input = fgetc(stdin);
 		}
 
-		if (serial_input == 's' || serial_input == 'S') {
+		if ((serial_input == 's' || serial_input == 'S') & !start_roll) {
 			move_player(0, -1);
 			player_moved = true;
 		}
 
-		if (serial_input == 'w' || serial_input == 'W') {
+		if ((serial_input == 'w' || serial_input == 'W') & !start_roll) {
 			move_player(0, 1);
 			player_moved = true;
 		}
 
-		if (serial_input == 'd' || serial_input == 'D') {
+		if ((serial_input == 'd' || serial_input == 'D') & !start_roll) {
 			move_player(1, 0);
 			player_moved = true;
 		}
 
-		if (serial_input == 'a' || serial_input == 'A') {
+		if ((serial_input == 'a' || serial_input == 'A') & !start_roll) {
 			move_player(-1, 0);
 			player_moved = true;
 		}
 
 		current_time = get_current_time();
 
-		if ((btn == BUTTON2_PUSHED) & !start_roll) {
+		if (((btn == BUTTON2_PUSHED)|(serial_input == 'r' || serial_input == 'R')) & !start_roll) {
 			start_roll = true;
 			printf_P(PSTR("Dice Rolling..."));
-		}else if ((btn == BUTTON2_PUSHED) & start_roll) {
+		}else if (((btn == BUTTON2_PUSHED)|(serial_input == 'r' || serial_input == 'R')) & start_roll) {
 			start_roll = false;
 			printf_P(PSTR("Dice Stoppped"));
 			move_player_n(dice_value);
 		}
 
 		if (start_roll) {
-			if (current_time >= last_flash_time + 100) {
+			if (current_time >= last_roll_time + 100) {
 				dice_value = roll_dice();
+				last_roll_time = current_time;
 			}
 		}
 
@@ -199,6 +205,8 @@ void play_game(void) {
 		}
 
 		player_moved = false;
+
+		seven_seg_display(moves, dice_value);
 	}
 	// We get here if the game is over.
 }
