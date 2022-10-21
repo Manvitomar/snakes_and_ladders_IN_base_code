@@ -256,3 +256,42 @@ uint8_t roll_dice(void) {
 	uint8_t dice_value = rand() % 6; // 0 to 5
 	return dice_value + 1; // 1 to 6 (inclusive)
 }
+
+// Moves player to end of snake/ladder (if player is at the start of the snake/ladder)
+void snake_ladder_func(void){
+	// Get the object at the player's position
+	uint8_t object = get_object_at(player_1_x, player_1_y);
+	uint8_t object_type = get_object_type(object);
+	uint8_t object_identifier = get_object_identifier(object);
+	
+	uint8_t tempObject;
+
+	// Check if the object is either a SNAKE_START or LADDER_START
+	if (object_type == SNAKE_START) {
+
+		// Loop through board to find the corresponding snake end
+		for (int i = 0; i < WIDTH; i++) {
+			for (int j = 0; j < HEIGHT; j++) {
+				tempObject = get_object_at(i, j);
+				
+				// Move player to SNAKE_END
+				if (get_object_type(tempObject) == SNAKE_END && object_identifier == get_object_identifier(tempObject)) {
+					move_player(i-player_1_x, j-player_1_y);
+				}				
+			}
+		}
+	} else if (object_type == LADDER_START) {
+
+		// Loop through board to find the corresponding ladder end
+		for (int i = 0; i < WIDTH; i++) {
+			for (int j = 0; j < HEIGHT; j++) {
+				tempObject = get_object_at(i, j);
+
+				// Move player to LADDER_END
+				if (get_object_type(tempObject) == LADDER_END  && object_identifier == get_object_identifier(tempObject)) {
+					move_player(i-player_1_x, j-player_1_y);
+				}				
+			}
+		}
+	}
+}

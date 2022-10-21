@@ -206,6 +206,7 @@ void play_game(void) {
 
 		player_moved = false;
 
+		snake_ladder_func();
 		seven_seg_display(moves, dice_value);
 	}
 	// We get here if the game is over.

@@ -66,5 +66,9 @@ uint8_t is_game_over(void);
 // Simulates dice roll by generating random value from 1-6 (inclusive)
 uint8_t roll_dice(void);
 
+
+// Moves player to end of snake/ladder (if player is at the start of the snake/ladder)
+void snake_ladder_func(void);
+
 #endif
 
