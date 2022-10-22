@@ -247,7 +247,11 @@ void flash_player_cursor(void) {
 // Returns 1 if the game is over, 0 otherwise.
 uint8_t is_game_over(void) {
 	// YOUR CODE HERE
+	uint8_t object = get_object_at(player_1_x, player_1_y);
 	// Detect if the game is over i.e. if a player has won.
+	if (get_object_type(object) == FINISH_LINE) {
+		return 1;
+	}
 	return 0;
 }
 

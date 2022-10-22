@@ -131,6 +131,9 @@ void play_game(void) {
 	last_flash_time = get_current_time();
 	last_roll_time = get_current_time();
 	
+	moves = 0;
+	dice_value = 0;
+
 	// We play the game until it's over
 	while(!is_game_over()) {
 				
@@ -210,16 +213,27 @@ void play_game(void) {
 		seven_seg_display(moves, dice_value);
 	}
 	// We get here if the game is over.
+	handle_game_over();
 }
 
 void handle_game_over() {
+	clear_terminal();
 	move_terminal_cursor(10,14);
 	printf_P(PSTR("GAME OVER"));
 	move_terminal_cursor(10,15);
 	printf_P(PSTR("Press a button to start again"));
 	
-	while(button_pushed() == NO_BUTTON_PUSHED) {
+	while(button_pushed() == NO_BUTTON_PUSHED && !serial_input_available()) {
 		; // wait
+	}
+
+	char serial_input = -1;
+	if (serial_input_available()) {
+		serial_input = fgetc(stdin);
+	}
+	// if the serial input is 's' or 'S', then exit the start screen
+	if ((serial_input == 's' || serial_input == 'S') || button_pushed != NO_BUTTON_PUSHED ) {
+		main();
 	}
 	
 }
