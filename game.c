@@ -42,19 +42,25 @@ static const uint8_t starting_layout[HEIGHT][WIDTH] =
 	{START_POINT, 0, 0, SNAKE_END | 1, 0, 0, 0, 0}
 };
 
-// The player is not stored in the board itself to avoid overwriting game
+// The player(s) is not stored in the board itself to avoid overwriting game
 // elements when the player is moved.
 int8_t player_1_x;
 int8_t player_1_y;
+int8_t player_2_x;
+int8_t player_2_y;
 
 // For flashing the player icon
 uint8_t player_visible;
 
-// Added by student (Arjun Srikanth)
-// 1 if player moved up a row, 0 if not
-bool moved_up = false;
+// For flashing the player 2 icon
+uint8_t player_2_visible;
 
-void initialise_game(void) {
+// Added by student (Arjun Srikanth)
+// true if player moved up a row, false if not
+bool p1_moved_up = false;
+bool p2_moved_up = false;
+
+void initialise_game(bool two_player_game) {
 	
 	// initialise the display we are using.
 	initialise_display();
@@ -64,7 +70,10 @@ void initialise_game(void) {
 	// system
 	player_1_x = 0;
 	player_1_y = 0;
-	
+	player_2_x = 0;
+	player_2_y = 0;
+
+
 	player_visible = 0;
 
 	// go through and initialise the state of the playing_field
@@ -79,6 +88,10 @@ void initialise_game(void) {
 	}
 	
 	update_square_colour(player_1_x, player_1_y, PLAYER_1);
+	if (two_player_game) {
+		player_2_visible = 0;
+		update_square_colour(player_2_x, player_2_y, PLAYER_2);
+	}
 }
 
 // Return the game object at the specified position (x, y). This function does
@@ -107,7 +120,7 @@ uint8_t get_object_identifier(uint8_t object) {
 }
 
 // Move the player by the given number of spaces forward.
-void move_player_n(uint8_t num_spaces) {
+void move_player_n(uint8_t num_spaces, bool move_player_1) {
 	/* suggestions for implementation:
 	 * 1: remove the display of the player at the current location
 	 *		(and replace it with whatever object is at that location).
@@ -124,47 +137,77 @@ void move_player_n(uint8_t num_spaces) {
 	 *		cursor is flashed.
 	 */
 	// YOUR CODE HERE
-	int8_t prev_player_x = player_1_x;
-	int8_t prev_player_y = player_1_y;
+	int8_t prev_player_x, prev_player_y;
+	int8_t player_x, player_y;
+	if (move_player_1) {
+		prev_player_x = player_1_x;
+		prev_player_y = player_1_y;
+		player_x = player_1_x;
+		player_y = player_1_y;
+	}
+	else {
+		prev_player_x = player_2_x;
+		prev_player_y = player_2_y;
+		player_x = player_2_x;
+		player_y = player_2_y;
+	}
 
-	int8_t diff = player_1_x - num_spaces;
+	int8_t diff = player_x - num_spaces;
 	// Boolean values to check player's position
 	
 	//	Player is at the end of the row (right side)
-	bool player_end_right = (player_1_x == WIDTH-1);
+	bool player_end_right = (player_x == WIDTH-1);
 	
 	//	Player is at the end of the row (left side)
-	bool player_end_left = ((player_1_x==0) & (player_1_y%2));
+	bool player_end_left = ((player_x==0) & (player_y%2));
 
-	if(( player_end_right | player_end_left) & (!moved_up)) {
-		moved_up = true;
-		player_1_y += 1;
+	if(( player_end_right | player_end_left) & ((move_player_1 && !p1_moved_up) || (!move_player_1 && !p2_moved_up))) {
+		if(move_player_1) {
+			p1_moved_up = true;
+		} else {
+			p2_moved_up = true;
+		}
+		player_y += 1;
 
 		if (player_end_left) {
-			player_1_x += num_spaces-1;
+			player_x += num_spaces-1;
 		} else {
-			player_1_x -= num_spaces-1;
+			player_x -= num_spaces-1;
 		}
-	}else if(player_1_y%2) {
-		moved_up = false;
+	}else if(player_y%2) {
+		if (move_player_1) {
+			p1_moved_up = false;
+		} else {
+			p2_moved_up = false;
+		}
 
 		// Make sure the player doesn't go past the end point
-		if ((diff < 0) & (player_1_y == HEIGHT-1)) {
-			player_1_x = 0;
+		if ((diff < 0) & (player_y == HEIGHT-1)) {
+			player_x = 0;
 		} else if (diff < 0) {
-			int8_t remaining_steps = num_spaces - (player_1_x+1);
-			int8_t dx = player_1_x - remaining_steps;
-			player_1_x -= dx;
-			player_1_y += 1;
-			moved_up = true;
+			int8_t remaining_steps = num_spaces - (player_x+1);
+			int8_t dx = player_x - remaining_steps;
+			player_x -= dx;
+			player_y += 1;
+			if (move_player_1) {
+				p1_moved_up = true;
+			} else {
+				p2_moved_up = true;
+			}
+
 		} else {
-			player_1_x -= num_spaces;
+			player_x -= num_spaces;
 		}
 	}else{
-		moved_up = false;
-		if(player_1_x + num_spaces > WIDTH-1) {
+		if (move_player_1) {
+			p1_moved_up = false;
+		} else {
+			p2_moved_up = false;
+		}
+
+		if(player_x + num_spaces > WIDTH-1) {
 			// Steps to end of row
-			int8_t x_steps = WIDTH - player_1_x;
+			int8_t x_steps = WIDTH - player_x;
 
 			// remaining steps from x += x_steps, y += 1
 			int8_t remaining_steps = num_spaces - (x_steps - 1);
@@ -172,26 +215,41 @@ void move_player_n(uint8_t num_spaces) {
 			// number of x_steps player needs to take to reach new point
 			int8_t dx = x_steps - remaining_steps;
 
-			player_1_x += dx;
-			player_1_y += 1;
-			moved_up = true;
+			player_x += dx;
+			player_y += 1;
+			if (move_player_1) {
+				p1_moved_up = true;
+			} else {
+				p2_moved_up = true;
+			}
+
 		}else {
-			player_1_x += num_spaces;
+			player_x += num_spaces;
 		}
 	}
 
 	// Check if player is at end tile
 	if((prev_player_x == 0) & (prev_player_y == HEIGHT-1)) {
-		player_1_x = prev_player_x;
-		player_1_y = prev_player_y;
+		player_x = prev_player_x;
+		player_y = prev_player_y;
 	}
+	
 	update_square_colour(prev_player_x, prev_player_y, get_object_at(prev_player_x, prev_player_y));
-	update_square_colour(player_1_x, player_1_y, PLAYER_1);
+	if (move_player_1){
+		player_1_x = player_x;
+		player_1_y = player_y;
+		update_square_colour(player_1_x, player_1_y, PLAYER_1);
+
+	} else {
+		player_2_x = player_x;
+		player_2_y = player_y;
+		update_square_colour(player_2_x, player_2_y, PLAYER_2);
+	}
 }
 
 // Move the player one space in the direction (dx, dy). The player should wrap
 // around the display if moved 'off' the display.
-void move_player(int8_t dx, int8_t dy) {
+void move_player(int8_t dx, int8_t dy, bool move_player_1) {
 	/* suggestions for implementation:
 	 * 1: remove the display of the player at the current location
 	 *		(and replace it with whatever object is at that location).
@@ -206,24 +264,44 @@ void move_player(int8_t dx, int8_t dy) {
 	 *		cursor is flashed.
 	 */	
 	// YOUR CODE HERE
-	int8_t prev_player_x = player_1_x;
-	int8_t prev_player_y = player_1_y;
-
-	if (player_1_x + dx >= WIDTH) {
-		player_1_x = 0;
-	} else if (player_1_y + dy >= HEIGHT) {
-		player_1_y = 0;
-	} else if (player_1_x + dx < 0) {
-		player_1_x = WIDTH - 1;
-	} else if (player_1_y + dy < 0) {
-		player_1_y = HEIGHT - 1;
+	int8_t prev_player_x, prev_player_y;
+	int8_t player_x, player_y;
+	
+	if (move_player_1) {
+		prev_player_x = player_1_x;
+		prev_player_y = player_1_y;
+		player_x = player_1_x;
+		player_y = player_1_y;
 	} else {
-		player_1_x += dx;
-		player_1_y += dy;
+		prev_player_x = player_2_x;
+		prev_player_y = player_2_y;
+		player_x = player_2_x;
+		player_y = player_2_y;
 	}
 
-	update_square_colour(prev_player_x, prev_player_y, get_object_at(prev_player_x, prev_player_y));
-	update_square_colour(player_1_x, player_1_y, PLAYER_1);
+	if (player_x + dx >= WIDTH) {
+		player_x = 0;
+	} else if (player_y + dy >= HEIGHT) {
+		player_y = 0;
+	} else if (player_x + dx < 0) {
+		player_x = WIDTH - 1;
+	} else if (player_y + dy < 0) {
+		player_y = HEIGHT - 1;
+	} else {
+		player_x += dx;
+		player_y += dy;
+	}
+
+	if (move_player_1) {
+		player_1_x = player_x;
+		player_1_y = player_y;
+		update_square_colour(player_1_x, player_1_y, PLAYER_1);
+	} else {
+		player_2_x = player_x;
+		player_2_y = player_y;
+		update_square_colour(player_2_x, player_2_y, PLAYER_2);
+	}
+	update_square_colour(prev_player_x, prev_player_y, get_object_at(prev_player_x, prev_player_y));	
 }
 
 // Flash the player icon on and off. This should be called at a regular
@@ -236,7 +314,6 @@ void flash_player_cursor(void) {
 		// the colour of the object which is at that location
 		uint8_t object_at_cursor = get_object_at(player_1_x, player_1_y);
 		update_square_colour(player_1_x, player_1_y, object_at_cursor);
-		
 	} else {
 		// we need to flash the player on
 		update_square_colour(player_1_x, player_1_y, PLAYER_1);
@@ -244,13 +321,34 @@ void flash_player_cursor(void) {
 	player_visible = 1 - player_visible; //alternate between 0 and 1
 }
 
+void flash_player_2_cursor(void) {
+	if (player_2_visible) {
+		// we need to flash the player off, it should be replaced by
+		// the colour of the object which is at that location
+		uint8_t object_at_cursor = get_object_at(player_2_x, player_2_y);
+		update_square_colour(player_2_x, player_2_y, object_at_cursor);
+	} else {
+		// we need to flash the player on
+		update_square_colour(player_2_x, player_2_y, PLAYER_2);
+	}
+	player_2_visible = 1 - player_2_visible; //alternate between 0 and 1
+
+}
 // Returns 1 if the game is over, 0 otherwise.
 uint8_t is_game_over(void) {
 	// YOUR CODE HERE
 	uint8_t object = get_object_at(player_1_x, player_1_y);
-	// Detect if the game is over i.e. if a player has won.
+	// Detect if the game is over i.e. if player 1 has won.
 	if (get_object_type(object) == FINISH_LINE) {
 		return 1;
+	}
+	// Check if player 2 has won
+	if (player_2_x >= 0 && player_2_y >= 0) {
+		object = get_object_at(player_2_x, player_2_y);
+		if (get_object_type(object) == FINISH_LINE) {
+			return 2;
+		}
+	
 	}
 	return 0;
 }
@@ -262,9 +360,19 @@ uint8_t roll_dice(void) {
 }
 
 // Moves player to end of snake/ladder (if player is at the start of the snake/ladder)
-void snake_ladder_func(void){
+void snake_ladder_func(bool move_player_1){
 	// Get the object at the player's position
-	uint8_t object = get_object_at(player_1_x, player_1_y);
+	int8_t player_x, player_y;
+	
+	if (move_player_1) {
+		player_x = player_1_x;
+		player_y = player_1_y;
+	} else {
+		player_x = player_2_x;
+		player_y = player_2_y;
+	}
+
+	uint8_t object = get_object_at(player_x, player_y);
 	uint8_t object_type = get_object_type(object);
 	uint8_t object_identifier = get_object_identifier(object);
 	
@@ -280,7 +388,7 @@ void snake_ladder_func(void){
 				
 				// Move player to SNAKE_END
 				if (get_object_type(tempObject) == SNAKE_END && object_identifier == get_object_identifier(tempObject)) {
-					move_player(i-player_1_x, j-player_1_y);
+					move_player(i-player_x, j-player_y, move_player_1);
 				}				
 			}
 		}
@@ -293,7 +401,7 @@ void snake_ladder_func(void){
 
 				// Move player to LADDER_END
 				if (get_object_type(tempObject) == LADDER_END  && object_identifier == get_object_identifier(tempObject)) {
-					move_player(i-player_1_x, j-player_1_y);
+					move_player(i-player_x, j-player_y, move_player_1);
 				}				
 			}
 		}

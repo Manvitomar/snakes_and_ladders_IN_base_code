@@ -108,7 +108,9 @@ void update_square_colour(uint8_t x, uint8_t y, uint8_t object) {
 		case PLAYER_1:
 			colour = MATRIX_COLOUR_P1;
 			break;
-			
+		case PLAYER_2:
+			colour = MATRIX_COLOUR_P2;
+			break;
 		// All snakes should be the same colour
 		case SNAKE_START:	/* FALLTHROUGH */
 		case SNAKE_END:		/* FALLTHROUGH */
