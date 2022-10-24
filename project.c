@@ -363,6 +363,7 @@ void two_play_game(void) {
 		player_moved = false;
 
 		snake_ladder_func(move_player_1);
+		// Shows previous player's no. of moves
 		seven_seg_display(moves, dice_value);
 	}
 	// We get here if the game is over.
