@@ -40,7 +40,7 @@
 
 // Initialise the display of the board. This creates the internal board
 // and also updates the display to show the initialised board.
-void initialise_game(bool two_player_game);
+void initialise_game(bool two_player_game, uint8_t board_number);
 
 // Return the game object at the specified position (x, y). This function does
 // not consider the position of the player token since it is not stored on the

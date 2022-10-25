@@ -42,6 +42,27 @@ static const uint8_t starting_layout[HEIGHT][WIDTH] =
 	{START_POINT, 0, 0, SNAKE_END | 1, 0, 0, 0, 0}
 };
 
+static const uint8_t custom_layout[HEIGHT][WIDTH] = 
+{
+	{FINISH_LINE, SNAKE_START | 5, 0, 0, 0, LADDER_END | 4, 0, 0},
+	{0, SNAKE_MIDDLE, 0, 0, LADDER_MIDDLE, 0, 0, 0},
+	{0, SNAKE_MIDDLE, 0, LADDER_MIDDLE, 0, 0, 0, 0},
+	{0, SNAKE_MIDDLE, LADDER_START | 4, SNAKE_START | 4, 0, 0, 0, 0},
+	{0, SNAKE_END | 5, 0, SNAKE_MIDDLE, LADDER_END | 3, 0, 0, 0},
+	{0, 0, 0, SNAKE_END | 4, 0, LADDER_MIDDLE, 0, 0},
+	{0, 0, 0, 0, 0, 0, LADDER_START | 3, 0},
+	{0, 0, 0, 0, SNAKE_START | 3, 0, 0, 0},
+	{0, SNAKE_START | 2, 0, 0, 0, SNAKE_MIDDLE, 0, 0},
+	{0, SNAKE_END | 2, 0, 0, 0, 0, SNAKE_END | 3, LADDER_END | 2},
+	{0, 0, 0, 0, 0, 0, 0, LADDER_MIDDLE},
+	{0, SNAKE_START | 1, 0, 0, 0, 0, 0, LADDER_START | 2},
+	{0, LADDER_END | 1, SNAKE_MIDDLE, 0, 0, 0, 0, 0},
+	{0, LADDER_MIDDLE, 0, SNAKE_MIDDLE, 0, 0, 0, 0},
+	{0, LADDER_MIDDLE, 0, 0, SNAKE_MIDDLE, 0, 0, 0},
+	{START_POINT, LADDER_START | 1, 0, 0, 0, SNAKE_END | 1, 0, 0}
+};
+
+
 // The player(s) is not stored in the board itself to avoid overwriting game
 // elements when the player is moved.
 int8_t player_1_x;
@@ -60,7 +81,7 @@ uint8_t player_2_visible;
 bool p1_moved_up = false;
 bool p2_moved_up = false;
 
-void initialise_game(bool two_player_game) {
+void initialise_game(bool two_player_game, uint8_t board_number) {
 	
 	// initialise the display we are using.
 	initialise_display();
@@ -77,13 +98,25 @@ void initialise_game(bool two_player_game) {
 	player_visible = 0;
 
 	// go through and initialise the state of the playing_field
-	for (int x = 0; x < WIDTH; x++) {
-		for (int y = 0; y < HEIGHT; y++) {
-			// initialise this square based on the starting layout
-			// the indices here are to ensure the starting layout
-			// could be easily visualised when declared
-			board[x][y] = starting_layout[HEIGHT - 1 - y][x];
-			update_square_colour(x, y, get_object_type(board[x][y]));
+	if (board_number == 1) {
+		for (int x = 0; x < WIDTH; x++) {
+			for (int y = 0; y < HEIGHT; y++) {
+				// initialise this square based on the starting layout
+				// the indices here are to ensure the starting layout
+				// could be easily visualised when declared
+				board[x][y] = starting_layout[HEIGHT - 1 - y][x];
+				update_square_colour(x, y, get_object_type(board[x][y]));
+			}
+		}
+	} else if(board_number == 2) {
+		for (int x = 0; x < WIDTH; x++) {
+			for (int y = 0; y < HEIGHT; y++) {
+				// initialise this square based on the starting layout
+				// the indices here are to ensure the starting layout
+				// could be easily visualised when declared
+				board[x][y] = custom_layout[HEIGHT - 1 - y][x];
+				update_square_colour(x, y, get_object_type(board[x][y]));
+			}
 		}
 	}
 	

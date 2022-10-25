@@ -29,6 +29,7 @@
 // Function prototypes - these are defined below (after main()) in the order
 // given here
 void initialise_hardware(void);
+void terminal_start_screen(void);
 void start_screen(void);
 void new_game(void);
 void play_game(void);
@@ -46,6 +47,10 @@ bool start_roll = false;
 // Two player game - true/false
 bool two_player_game = false;
 
+// Board number (board select)
+uint8_t board_number;
+static const uint8_t TOTAL_BOARDS = 2;
+
 /////////////////////////////// main //////////////////////////////////
 int main(void) {
 	// Setup hardware and call backs. This will turn on 
@@ -55,6 +60,7 @@ int main(void) {
 	// Show the splash screen message. Returns when display
 	// is complete.
 	two_player_game = false;
+	board_number = 1;
 	start_screen();
 	
 	// Loop forever and continuously play the game.
@@ -83,8 +89,7 @@ void initialise_hardware(void) {
 	sei();
 }
 
-void start_screen(void) {
-	// Clear terminal screen and output a message
+void terminal_start_screen(void) {
 	clear_terminal();
 	move_terminal_cursor(10,10);
 	printf_P(PSTR("Snakes and Ladders"));
@@ -97,6 +102,18 @@ void start_screen(void) {
 
 	move_terminal_cursor(10,16);
 	printf_P(PSTR("Press '2' for two player"));
+
+	move_terminal_cursor(10, 18);
+	printf_P(PSTR("Press 'b'/'B' to toggle between the boards"));
+	move_terminal_cursor(10, 20);
+	
+	printf_P(PSTR("BOARD: %d"), board_number);
+
+}
+
+void start_screen(void) {
+	// Clear terminal screen and output a message
+	terminal_start_screen();
 	// Output the static start screen and wait for a push button 
 	// to be pushed or a serial input of 's'
 	start_display();
@@ -107,6 +124,7 @@ void start_screen(void) {
 		// There are two steps to this
 		// 1) collect any serial input (if available)
 		// 2) check if the input is equal to the character 's'
+		
 		seven_seg_display(moves, dice_value); // Display 00 during start_screen
 
 		char serial_input = -1;
@@ -124,6 +142,15 @@ void start_screen(void) {
 			two_player_game = true;
 			break;
 		}
+
+		if (serial_input == 'b' || serial_input == 'B') {
+			if (board_number == TOTAL_BOARDS) {
+				board_number = 1;
+			} else {
+				board_number += 1;
+			}
+			terminal_start_screen();
+		}
 		// Next check for any button presses
 		int8_t btn = button_pushed();
 		if (btn != NO_BUTTON_PUSHED) {
@@ -137,7 +164,7 @@ void new_game(void) {
 	clear_terminal();
 	
 	// Initialise the game and display
-	initialise_game(two_player_game);
+	initialise_game(two_player_game, board_number);
 	
 	// Clear a button push or serial input if any are waiting
 	// (The cast to void means the return value is ignored.)
@@ -205,10 +232,14 @@ void play_game(void) {
 
 		if (((btn == BUTTON2_PUSHED)|(serial_input == 'r' || serial_input == 'R')) & !start_roll) {
 			start_roll = true;
+			clear_terminal();
+			move_terminal_cursor(10, 14);
 			printf_P(PSTR("Dice Rolling..."));
 		}else if (((btn == BUTTON2_PUSHED)|(serial_input == 'r' || serial_input == 'R')) & start_roll) {
 			start_roll = false;
-			printf_P(PSTR("Dice Stoppped"));
+			clear_terminal();
+			move_terminal_cursor(10, 14);
+			printf_P(PSTR("Dice Stopped. Value: %d"), dice_value);
 			move_player_n(dice_value, true);
 			moves += 1;
 		}
@@ -325,10 +356,15 @@ void two_play_game(void) {
 
 		if (((btn == BUTTON2_PUSHED)|(serial_input == 'r' || serial_input == 'R')) & !start_roll) {
 			start_roll = true;
+			clear_terminal();
+			move_terminal_cursor(10, 14);
 			printf_P(PSTR("Dice Rolling..."));
+
 		}else if (((btn == BUTTON2_PUSHED)|(serial_input == 'r' || serial_input == 'R')) & start_roll) {
 			start_roll = false;
-			printf_P(PSTR("Dice Stoppped"));
+			clear_terminal();
+			move_terminal_cursor(10, 14);
+			printf_P(PSTR("Dice Stopped. Value: %d"), dice_value);
 			move_player_n(dice_value, move_player_1);
 			move_player_1 = !move_player_1;
 			if (move_player_1) {
@@ -355,7 +391,7 @@ void two_play_game(void) {
 			// 500ms (0.5 second) has passed since the last time we
 			// flashed the cursor, so flash the cursor
 			flash_player_cursor();
-			
+			flash_player_2_cursor();
 			// Update the most recent time the cursor was flashed
 			last_flash_time = current_time;
 		}
