@@ -51,6 +51,13 @@ bool two_player_game = false;
 uint8_t board_number;
 static const uint8_t TOTAL_BOARDS = 2;
 
+// Difficulty select
+uint8_t difficulty;
+
+// Timed game forfeit booleans
+bool p1_wins = false;
+bool p2_wins = false;
+
 /////////////////////////////// main //////////////////////////////////
 int main(void) {
 	// Setup hardware and call backs. This will turn on 
@@ -61,6 +68,9 @@ int main(void) {
 	// is complete.
 	two_player_game = false;
 	board_number = 1;
+	difficulty = 0;
+	p1_wins = false;
+	p2_wins = false;
 	start_screen();
 	
 	// Loop forever and continuously play the game.
@@ -90,6 +100,7 @@ void initialise_hardware(void) {
 }
 
 void terminal_start_screen(void) {
+	hide_cursor();
 	clear_terminal();
 	move_terminal_cursor(10,10);
 	printf_P(PSTR("Snakes and Ladders"));
@@ -108,6 +119,13 @@ void terminal_start_screen(void) {
 	move_terminal_cursor(10, 20);
 	
 	printf_P(PSTR("BOARD: %d"), board_number);
+
+	move_terminal_cursor(10, 22);
+	printf_P(PSTR("For easy difficulty, press 'e'/'E'"));
+	move_terminal_cursor(10, 23);
+	printf_P(PSTR("For medium difficulty, press 'm'/'M'"));
+	move_terminal_cursor(10, 24);
+	printf_P(PSTR("For hard difficulty, press 'h'/'H'"));
 
 }
 
@@ -151,6 +169,19 @@ void start_screen(void) {
 			}
 			terminal_start_screen();
 		}
+
+		if (serial_input == 'e' || serial_input == 'E') {
+			difficulty = 0;
+		}
+
+		if (serial_input == 'm' || serial_input == 'M') {
+			difficulty = 1;
+		}
+
+		if (serial_input == 'h' || serial_input == 'H') {
+			difficulty = 2;
+		}
+
 		// Next check for any button presses
 		int8_t btn = button_pushed();
 		if (btn != NO_BUTTON_PUSHED) {
@@ -176,11 +207,24 @@ void play_game(void) {
 	
 	uint32_t last_flash_time, current_time;
 	uint32_t last_roll_time; // Last time roll_dice() was called
+
+	// last_decrement_time - records last time the player_game_time was decremented
+	// player_game_time - is the total time the player has to complete the game
+	uint32_t last_decrement_time, player_game_time;
+
 	uint8_t btn; // The button pushed
 	
 	last_flash_time = get_current_time();
 	last_roll_time = get_current_time();
+	last_decrement_time = get_current_time();
 	
+	if (difficulty == 1) {
+		player_game_time = 90000;
+	} else if (difficulty == 2) {
+		player_game_time = 45000;
+	} else {
+		player_game_time = 45000000; // 12.5 hours
+	}
 	moves = 0;
 	dice_value = 0;
 
@@ -251,6 +295,15 @@ void play_game(void) {
 			}
 		}
 
+		if (player_game_time < 100) {
+			break;
+		}
+
+		if (current_time >= last_decrement_time + 100) {
+			player_game_time -= 100;
+			last_decrement_time = current_time;
+		}
+
 		// Hold player flash for 500ms after movement
 		if (player_moved) {
 			current_time = 0;
@@ -268,6 +321,15 @@ void play_game(void) {
 
 		snake_ladder_func(true);
 		seven_seg_display(moves, dice_value);
+
+		if (difficulty > 0) {
+			move_terminal_cursor(10, 16);
+			printf_P(PSTR("Time Left: %d"), player_game_time/1000);
+			if (player_game_time < 10000){
+				move_terminal_cursor(22, 16);
+				printf_P(PSTR(".%d"), (player_game_time%1000)/100);
+			}
+		}
 	}
 	// We get here if the game is over.
 	handle_game_over();
@@ -276,10 +338,29 @@ void play_game(void) {
 void two_play_game(void) {
 	uint32_t last_flash_time, current_time;
 	uint32_t last_roll_time; // Last time roll_dice() was called
+	
+	// pn_last_decrement_time - records last time the player_game_time was decremented
+	// pn_player_game_time - is the time the player has to complete the game
+	uint32_t p1_last_decrement_time, p1_game_time;
+	uint32_t p2_last_decrement_time, p2_game_time;
+
 	uint8_t btn; // The button pushed
 	
 	last_flash_time = get_current_time();
 	last_roll_time = get_current_time();
+	p1_last_decrement_time = get_current_time();
+	p2_last_decrement_time = get_current_time();
+
+	if (difficulty == 1) {
+		p1_game_time = 90000;
+		p2_game_time = 90000;
+	} else if (difficulty == 2) {
+		p1_game_time = 45000;
+		p2_game_time = 45000;
+	} else {
+		p1_game_time = 45000000; // 12.5 hours
+		p2_game_time = 45000000; 
+	}
 	
 	// True = move player 1, False = move player 2
 	bool move_player_1 = true;
@@ -383,6 +464,26 @@ void two_play_game(void) {
 			}
 		}
 
+		if (p1_game_time < 100) {
+			p2_wins = true;
+			break;
+		} else if(p2_game_time < 100) {
+			p1_wins = true;
+			break;
+		}
+
+		if (move_player_1) {
+			if (current_time >= p1_last_decrement_time + 100) {
+				p1_game_time -= 100;
+				p1_last_decrement_time = current_time;
+			}
+		} else {
+			if (current_time >= p2_last_decrement_time + 100) {
+				p2_game_time -= 100;
+				p2_last_decrement_time = current_time;
+			}
+		}
+
 		// Hold player flash for 500ms after movement
 		if (player_moved) {
 			current_time = 0;
@@ -401,6 +502,23 @@ void two_play_game(void) {
 		snake_ladder_func(move_player_1);
 		// Shows previous player's no. of moves
 		seven_seg_display(moves, dice_value);
+
+		if (difficulty > 0) {
+			move_terminal_cursor(10, 16);
+			printf_P(PSTR("P1 time left: %d"), p1_game_time/1000);
+			move_terminal_cursor(10, 18);
+			printf_P(PSTR("P2 time left: %d"), p2_game_time/1000);
+
+			if (p1_game_time < 10000) {
+				move_terminal_cursor(25, 16);
+				printf_P(PSTR(".%d"), (p1_game_time%1000)/100);
+			}
+			
+			if (p2_game_time < 10000) {
+				move_terminal_cursor(25, 18);
+				printf_P(PSTR(".%d"), (p2_game_time%1000)/100);
+			}
+		}
 	}
 	// We get here if the game is over.
 	handle_game_over();
@@ -411,13 +529,15 @@ void handle_game_over() {
 	move_terminal_cursor(10,14);
 	printf_P(PSTR("GAME OVER"));
 	move_terminal_cursor(10,15);
-	if (is_game_over() == 1) {
+	if (is_game_over() == 1 || p1_wins) {
 		printf_P(PSTR("Player 1 Wins!!"));
-	} else {
+	} else if (is_game_over() == 2 || p2_wins){
 		printf_P(PSTR("Player 2 Wins!!"));
+	} else {
+		printf_P(PSTR("No one wins :("));
 	}
 	move_terminal_cursor(10,16);
-	printf_P(PSTR("Press a button to start again"));
+	printf_P(PSTR("Press a button or 's'/'S' to start again"));
 	
 	while(button_pushed() == NO_BUTTON_PUSHED && !serial_input_available()) {
 		; // wait
@@ -428,8 +548,10 @@ void handle_game_over() {
 		serial_input = fgetc(stdin);
 	}
 	// if the serial input is 's' or 'S', then exit the start screen
-	if ((serial_input == 's' || serial_input == 'S') || button_pushed != NO_BUTTON_PUSHED ) {
+	if ((serial_input == 's' || serial_input == 'S') || button_pushed()) {
 		main();
+	} else {
+		handle_game_over();
 	}
 	
 }
