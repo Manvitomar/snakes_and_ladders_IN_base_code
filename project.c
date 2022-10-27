@@ -511,18 +511,18 @@ void two_play_game(void) {
 		
 		if (difficulty > 0) {
 			move_terminal_cursor(10, 16);
-			printf_P(PSTR("P1 time left: %d"), p1_game_time/1000);
-			move_terminal_cursor(10, 18);
-			printf_P(PSTR("P2 time left: %d"), p2_game_time/1000);
-
-			if (p1_game_time < 10000) {
-				move_terminal_cursor(25, 16);
-				printf_P(PSTR(".%d"), (p1_game_time%1000)/100);
-			}
-			
-			if (p2_game_time < 10000) {
-				move_terminal_cursor(25, 18);
-				printf_P(PSTR(".%d"), (p2_game_time%1000)/100);
+			if (move_player_1){
+				printf_P(PSTR("P1 time left: %d"), p1_game_time/1000);
+				if (p1_game_time < 10000) {
+					move_terminal_cursor(25, 16);
+					printf_P(PSTR(".%d"), (p1_game_time%1000)/100);
+				}
+			} else {
+				printf_P(PSTR("P2 time left: %d"), p2_game_time/1000);
+				if (p2_game_time < 10000) {
+					move_terminal_cursor(25, 16);
+					printf_P(PSTR(".%d"), (p2_game_time%1000)/100);
+				}
 			}
 		}
 		snake_ladder_func(move_player_1);
@@ -535,6 +535,8 @@ void two_play_game(void) {
 }
 
 void game_pause(void) {
+	move_terminal_cursor(10, 12);
+	printf_P(PSTR("GAME PAUSED. Press 'p'/'P' to continue game"));
 	while (1) {
 		char serial_input = -1;
 		if (serial_input_available()){
@@ -547,6 +549,7 @@ void game_pause(void) {
 		seven_seg_display(moves, dice_value);
 		init_button_interrupts();
 	}
+	clear_to_end_of_line();
 }
 
 void handle_game_over() {
