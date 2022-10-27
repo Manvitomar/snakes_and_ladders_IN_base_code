@@ -34,6 +34,7 @@ void start_screen(void);
 void new_game(void);
 void play_game(void);
 void two_play_game(void);
+void game_pause(void);
 void handle_game_over(void);
 
 // Check if player has moved (for player flash implementation)
@@ -252,6 +253,10 @@ void play_game(void) {
 			serial_input = fgetc(stdin);
 		}
 
+		if (btn == BUTTON3_PUSHED || serial_input == 'p' || serial_input == 'P') {
+			game_pause();
+		}
+
 		if ((serial_input == 's' || serial_input == 'S') & !start_roll) {
 			move_player(0, -1, true);
 			player_moved = true;
@@ -412,6 +417,10 @@ void two_play_game(void) {
 		if (serial_input_available()) {
 			serial_input = fgetc(stdin);
 		}
+		
+		if (btn == BUTTON3_PUSHED || serial_input == 'p' || serial_input == 'P') {
+			game_pause();
+		}
 
 		if ((serial_input == 's' || serial_input == 'S') & !start_roll) {
 			move_player(0, -1, move_player_1);
@@ -499,10 +508,7 @@ void two_play_game(void) {
 
 		player_moved = false;
 
-		snake_ladder_func(move_player_1);
-		// Shows previous player's no. of moves
-		seven_seg_display(moves, dice_value);
-
+		
 		if (difficulty > 0) {
 			move_terminal_cursor(10, 16);
 			printf_P(PSTR("P1 time left: %d"), p1_game_time/1000);
@@ -519,9 +525,28 @@ void two_play_game(void) {
 				printf_P(PSTR(".%d"), (p2_game_time%1000)/100);
 			}
 		}
+		snake_ladder_func(move_player_1);
+		// Shows previous player's no. of moves
+		seven_seg_display(moves, dice_value);
+
 	}
 	// We get here if the game is over.
 	handle_game_over();
+}
+
+void game_pause(void) {
+	while (1) {
+		char serial_input = -1;
+		if (serial_input_available()){
+			serial_input = fgetc(stdin);
+		}
+
+		if (serial_input == 'p' || serial_input == 'P') {
+			return;
+		}
+		seven_seg_display(moves, dice_value);
+		init_button_interrupts();
+	}
 }
 
 void handle_game_over() {
